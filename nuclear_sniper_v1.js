@@ -23,10 +23,10 @@ const CONFIG = {
     huntsFile: path.join(__dirname, 'server', 'data', 'active_pulses.json'),
     historyFile: path.join(__dirname, 'server', 'data', 'pulse_history.json'),
     
-    // THRESHOLDS (AGGRESSIVE TEST MODE)
-    minClusterUSD: 100000,    // $100k (Fast triggers for testing)
+    // THRESHOLDS (ULTRA-AGGRESSIVE TEST MODE)
+    minClusterUSD: 10000,     // $10k (Instant triggers for testing)
     clusterWindowMs: 15000,   
-    minDipPct: 0.3,           // 0.3% (Easy to hit)
+    minDipPct: 0.1,           // 0.1% (Near-instant hit)
     
     leverage: 1,              // 1x Leverage (Raw Safety)
     maxSlots: 10,             
