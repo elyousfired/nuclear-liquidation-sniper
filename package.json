@@ -1,0 +1,10 @@
+{
+  "name": "nuclear-liquidation-sniper",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "nuclear_sniper_v1.js",
+  "dependencies": {
+    "axios": "^1.6.8",
+    "ws": "^8.18.0"
+  }
+}
