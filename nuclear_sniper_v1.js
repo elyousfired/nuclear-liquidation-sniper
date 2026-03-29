@@ -71,28 +71,29 @@ function connect() {
         if (e.message.includes('403')) log('⚠️ WARNING: IP might be Geo-blocked by Binance.');
     });
 
-    let msgCount = 0;
     ws.on('message', (data) => {
         try {
             const raw = JSON.parse(data.toString());
+            const orders = Array.isArray(raw) ? raw : [raw];
 
-            // HEARTBEAT: Log first 5 messages to prove data flow
+            // HEARTBEAT: Prove data flow for the first 5 payloads
             if (msgCount < 5) {
-                log(`📡 [WS-HEARTBEAT] Received raw message for: ${raw.o.s}`);
+                log(`📡 [WS-ARRAY] Discovered ${orders.length} liquidations in payload.`);
                 msgCount++;
             }
 
-            const order = raw.o; 
-            const symbol = order.s;
-            const side = order.S; 
-            const price = parseFloat(order.p);
-            const quantity = parseFloat(order.q);
-            const valueUSD = price * quantity;
+            for (const item of orders) {
+                const order = item.o; 
+                const symbol = order.s;
+                const side = order.S; 
+                const price = parseFloat(order.p);
+                const quantity = parseFloat(order.q);
+                const valueUSD = price * quantity;
 
-            // Debug filters - Phase 24 (Open Season)
-            // Allow ALL USDT symbols temporarily to force trades for verification
-            if (symbol.endsWith('USDT')) {
-                processLiquidation(symbol, side, price, valueUSD);
+                // Debug filters - Phase 24 (Open Season)
+                if (symbol.endsWith('USDT')) {
+                    processLiquidation(symbol, side, price, valueUSD);
+                }
             }
         } catch (e) {
             log(`❌ [WS-PARSE-ERROR] ${e.message}`);
@@ -111,6 +112,7 @@ function processLiquidation(symbol, side, price, value) {
 
     if (!cluster || (now - cluster.startTime > CONFIG.clusterWindowMs)) {
         clusters.set(symbol, { total: value, startTime: now, startPrice: price, side, count: 1 });
+        log(`🧨 [CLUSTER-START] ${symbol} identified pulse start ($${(value/1000).toFixed(1)}k)`);
         return;
     }
 
