@@ -61,6 +61,7 @@ async function fetchTopSymbols(n = 100) {
 function connect() {
     log('🔗 Connecting to Binance Liquidation Stream...');
     const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
+    let msgCount = 0;
 
     ws.on('open', () => {
         log('✅ [WS-OPEN] Successfully connected to Binance Liquidation Stream.');
