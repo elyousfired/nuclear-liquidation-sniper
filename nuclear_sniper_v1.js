@@ -62,9 +62,26 @@ function connect() {
     log('🔗 Connecting to Binance Liquidation Stream...');
     const ws = new WebSocket('wss://fstream.binance.com/ws/!forceOrder@arr');
 
+    ws.on('open', () => {
+        log('✅ [WS-OPEN] Successfully connected to Binance Liquidation Stream.');
+    });
+
+    ws.on('error', (e) => {
+        log(`❌ [WS-ERROR] Connection error: ${e.message}`);
+        if (e.message.includes('403')) log('⚠️ WARNING: IP might be Geo-blocked by Binance.');
+    });
+
+    let msgCount = 0;
     ws.on('message', (data) => {
         try {
             const raw = JSON.parse(data.toString());
+
+            // HEARTBEAT: Log first 5 messages to prove data flow
+            if (msgCount < 5) {
+                log(`📡 [WS-HEARTBEAT] Received raw message for: ${raw.o.s}`);
+                msgCount++;
+            }
+
             const order = raw.o; 
             const symbol = order.s;
             const side = order.S; 
@@ -72,16 +89,19 @@ function connect() {
             const quantity = parseFloat(order.q);
             const valueUSD = price * quantity;
 
-            // DEBUG: See every liquidation for monitored symbols
+            // Debug filters
             if (topSymbols.includes(symbol)) {
-                // log(`[LOW-LEVEL] Liq: ${symbol} ${side} $${(valueUSD/1000).toFixed(1)}k`);
                 processLiquidation(symbol, side, price, valueUSD);
             }
-        } catch (e) {}
+        } catch (e) {
+            log(`❌ [WS-PARSE-ERROR] ${e.message}`);
+        }
     });
 
-    ws.on('close', () => { setTimeout(connect, 5000); });
-    ws.on('error', (e) => log(`❌ WS Error: ${e.message}`));
+    ws.on('close', () => { 
+        log('🔌 [WS-CLOSE] Connection closed. Retrying in 5s...');
+        setTimeout(connect, 5000); 
+    });
 }
 
 function processLiquidation(symbol, side, price, value) {
@@ -198,8 +218,10 @@ function saveHistory(p) {
 
 // --- BOOT ---
 (async () => {
-    log('--- NUCLEAR LIQUIDATION SNIPER STARTING (1x) ---');
+    log('--- NUCLEAR LIQUIDATION SNIPER STARTING ---');
     await fetchTopSymbols(100);
+    log(`📡 [TOP-SYMBOLS] Loaded ${topSymbols.length} pairs. Sample: ${topSymbols.slice(0, 5).join(', ')}`);
+    
     connect();
     
     app.listen(3009, '0.0.0.0', () => {
