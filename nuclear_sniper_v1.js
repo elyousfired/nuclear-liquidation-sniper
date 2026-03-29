@@ -28,10 +28,10 @@ const CONFIG = {
     clusterWindowMs: 15000,   // 15 seconds accumulation
     minDipPct: 0.6,           // Price must dip/spike by this %
     
-    leverage: 1,              // Set to 1x as requested
-    maxSlots: 10,             // Can handle 10 concurrent pulses
-    profitTargetPct: 0.4,     // Pulse Profit (Unleveraged)
-    stopLossPct: 0.2,         // Tight Scalp SL (Unleveraged)
+    leverage: 1,              // 1x Leverage (Raw Safety)
+    maxSlots: 10,             
+    profitTargetPct: 0.8,     // Pulse Profit (Net ~0.7% after fees)
+    stopLossPct: 0.3,         // Scalp SL (Net ~0.4% after fees)
 
     scanIntervalMs: 60 * 60 * 1000 // Refresh Top Symbols every hour
 };
