@@ -12,6 +12,8 @@ import axios from 'axios';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import express from 'express';
+import cors from 'cors';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -121,6 +123,7 @@ async function executePulseEntry(symbol, direction, price, intensity) {
 
 async function managePulse(id) {
     try {
+        if (!fs.existsSync(CONFIG.huntsFile)) return;
         let active = JSON.parse(fs.readFileSync(CONFIG.huntsFile, 'utf8'));
         const pulse = active.find(p => p.id === id);
         if (!pulse || pulse.status !== 'active') return;
@@ -128,15 +131,18 @@ async function managePulse(id) {
         const res = await axios.get(`https://fapi.binance.com/fapi/v1/ticker/price?symbol=${pulse.symbol}`);
         const current = parseFloat(res.data.price);
         
-        const rawPnL = pulse.direction === 'LONG' 
+        pulse.pnl = pulse.direction === 'LONG' 
             ? ((current - pulse.entryPrice) / pulse.entryPrice) * 100
             : ((pulse.entryPrice - current) / pulse.entryPrice) * 100;
 
+        // Update real-time file for the dashboard
+        fs.writeFileSync(CONFIG.huntsFile, JSON.stringify(active, null, 2));
+
         // EXIT LOGIC
-        if (rawPnL >= CONFIG.profitTargetPct || rawPnL <= -CONFIG.stopLossPct) {
+        if (pulse.pnl >= CONFIG.profitTargetPct || pulse.pnl <= -CONFIG.stopLossPct) {
             pulse.status = 'closed';
             pulse.exitPrice = current;
-            pulse.finalPnL = rawPnL * CONFIG.leverage;
+            pulse.finalPnL = pulse.pnl * CONFIG.leverage;
             saveHistory(pulse);
             
             const fresh = JSON.parse(fs.readFileSync(CONFIG.huntsFile, 'utf8')).filter(p => p.id !== id);
@@ -148,6 +154,26 @@ async function managePulse(id) {
         }
     } catch (e) { setTimeout(() => managePulse(id), 2000); }
 }
+
+// --- SERVER (PORT 3009) ---
+
+const app = express();
+app.use(cors());
+app.use(express.static(__dirname));
+
+app.get('/api/pulse/active', (req, res) => {
+    try {
+        const data = fs.existsSync(CONFIG.huntsFile) ? JSON.parse(fs.readFileSync(CONFIG.huntsFile, 'utf8')) : [];
+        res.json(data);
+    } catch (e) { res.json([]); }
+});
+
+app.get('/api/pulse/history', (req, res) => {
+    try {
+        const data = fs.existsSync(CONFIG.historyFile) ? JSON.parse(fs.readFileSync(CONFIG.historyFile, 'utf8')) : [];
+        res.json(data);
+    } catch (e) { res.json([]); }
+});
 
 function savePulse(p) {
     fs.mkdirSync(path.dirname(CONFIG.huntsFile), { recursive: true });
@@ -167,5 +193,10 @@ function saveHistory(p) {
     log('--- NUCLEAR LIQUIDATION SNIPER STARTING (1x) ---');
     await fetchTopSymbols(100);
     connect();
+    
+    app.listen(3009, '0.0.0.0', () => {
+        log('📊 Pulse Terminal online at http://localhost:3009');
+    });
+
     setInterval(() => fetchTopSymbols(100), CONFIG.scanIntervalMs);
 })();

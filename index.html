@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NUCLEAR SNIPER | PULSE TERMINAL</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Outfit:wght@300;400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #030712;
+            --card: #111827;
+            --accent: #ef4444;
+            --accent-glow: rgba(239, 68, 68, 0.2);
+            --success: #10b981;
+            --text-main: #f3f4f6;
+            --text-dim: #9ca3af;
+            --border: #1f2937;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            background: var(--bg); 
+            color: var(--text-main); 
+            font-family: 'Outfit', sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .terminal-header {
+            padding: 20px 40px;
+            background: rgba(17, 24, 39, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo { font-size: 20px; font-weight: 800; letter-spacing: 2px; color: var(--accent); }
+        .status-pill { padding: 6px 16px; border-radius: 20px; font-size: 12px; font-weight: 700; background: rgba(16, 185, 129, 0.1); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.2); }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+            padding: 20px 40px;
+        }
+
+        .section-title { font-size: 14px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; }
+        .section-title::before { content: ''; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; display: inline-block; }
+
+        .pulse-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 25px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pulse-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .pulse-card.active::after { 
+            content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: var(--accent); 
+            animation: pulse-glow 2s infinite;
+        }
+
+        @keyframes pulse-glow { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }
+
+        .pulse-top { display: flex; justify-content: space-between; align-items: start; margin-bottom: 20px; }
+        .token-info h2 { font-size: 24px; font-weight: 800; }
+        .token-info p { color: var(--text-dim); font-size: 13px; }
+
+        .pnl-badge { font-family: 'JetBrains Mono', monospace; font-size: 22px; font-weight: 700; }
+        .pnl-pos { color: var(--success); }
+        .pnl-neg { color: var(--accent); }
+
+        .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .metric { font-size: 12px; color: var(--text-dim); }
+        .metric b { display: block; font-size: 16px; color: var(--text-main); margin-top: 4px; }
+
+        .blood-radar {
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 20px;
+            height: calc(100vh - 120px);
+            position: sticky;
+            top: 100px;
+            overflow-y: auto;
+        }
+
+        .blood-item { padding: 12px 0; border-bottom: 1px solid #111; display: flex; justify-content: space-between; font-size: 13px; }
+        .blood-item:last-child { border: none; }
+        .blood-item .sym { font-weight: 700; }
+        .blood-item .amt { color: var(--accent); font-family: 'JetBrains Mono', monospace; }
+
+        .stats-bar { display: flex; gap: 30px; margin-bottom: 40px; }
+        .stat-item { flex: 1; background: var(--card); padding: 20px; border-radius: 16px; border: 1px solid var(--border); }
+        .stat-item label { font-size: 12px; color: var(--text-dim); text-transform: uppercase; }
+        .stat-item h3 { font-size: 28px; margin-top: 5px; }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="terminal-header">
+        <div class="logo">☢️ NUCLEAR SNIPER</div>
+        <div style="display: flex; gap: 20px; align-items: center;">
+            <div id="connectionStatus" class="status-pill">● ENGINE ONLINE</div>
+            <div style="font-family: 'JetBrains Mono'; font-size: 12px; color: var(--text-dim)" id="timer">--:--:--</div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="scoping-area">
+            <div class="stats-bar">
+                <div class="stat-item">
+                    <label>24H PnL (RAW)</label>
+                    <h3 id="statPnL" class="pnl-pos">+0.00%</h3>
+                </div>
+                <div class="stat-item">
+                    <label>Active Snipes</label>
+                    <h3 id="statActive">0</h3>
+                </div>
+                <div class="stat-item">
+                    <label>Win Rate</label>
+                    <h3 id="statWin">0%</h3>
+                </div>
+            </div>
+
+            <div class="section-title">Active Snipes (V-Shape Recovery)</div>
+            <div id="activeGrid">
+                <!-- Active pulses will appear here -->
+            </div>
+
+            <div class="section-title" style="margin-top: 40px">Blood History (Recent Liquidation Snipes)</div>
+            <div id="historyGrid">
+                <!-- History will appear here -->
+            </div>
+        </div>
+
+        <div class="blood-radar">
+            <div class="section-title">Live Blood Radar</div>
+            <div id="bloodRadar">
+                <!-- Real-time liquidations -->
+            </div>
+        </div>
+    </div>
+
+    <audio id="snipeSound" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+
+    <script>
+        const API_URL = `http://${window.location.hostname}:3009/api`;
+        let lastPulseCount = 0;
+
+        async function fetchData() {
+            try {
+                const [activeRes, historyRes] = await Promise.all([
+                    fetch(`${API_URL}/pulse/active`),
+                    fetch(`${API_URL}/pulse/history`)
+                ]);
+
+                const active = await activeRes.json();
+                const history = await historyRes.json();
+
+                renderActive(active);
+                renderHistory(history);
+                renderStats(active, history);
+
+                if (active.length > lastPulseCount) {
+                    document.getElementById('snipeSound').play();
+                }
+                lastPulseCount = active.length;
+
+            } catch (err) { console.error('API Error'); }
+        }
+
+        function renderActive(data) {
+            const grid = document.getElementById('activeGrid');
+            if (data.length === 0) {
+                grid.innerHTML = '<div style="color: var(--text-dim); padding: 40px; text-align: center;">Waiting for Big Blood... 🔭</div>';
+                return;
+            }
+
+            grid.innerHTML = data.map(p => `
+                <div class="pulse-card active">
+                    <div class="pulse-top">
+                        <div class="token-info">
+                            <h2>${p.symbol.replace('USDT', '')}</h2>
+                            <p>Intensity: $${(p.intensity/1e6).toFixed(1)}M | Snipped at ${new Date(p.entryTime).toLocaleTimeString()}</p>
+                        </div>
+                        <div class="pnl-badge ${p.pnl >= 0 ? 'pnl-pos' : 'pnl-neg'}">${p.pnl >= 0 ? '+' : ''}${p.pnl.toFixed(2)}%</div>
+                    </div>
+                    <div class="metrics-row">
+                        <div class="metric">Entry Price<b>$${p.entryPrice.toFixed(4)}</b></div>
+                        <div class="metric">Direction<b>${p.direction}</b></div>
+                        <div class="metric">Capital<b>$${p.capital}</b></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderHistory(data) {
+            const grid = document.getElementById('historyGrid');
+            grid.innerHTML = data.slice(-5).reverse().map(p => `
+                <div class="pulse-card">
+                    <div class="pulse-top">
+                        <div class="token-info">
+                            <h2 style="font-size: 18px; opacity: 0.8">${p.symbol.replace('USDT', '')}</h2>
+                            <p>Intensity: $${(p.intensity/1e6).toFixed(1)}M</p>
+                        </div>
+                        <div class="pnl-badge ${p.finalPnL >= 0 ? 'pnl-pos' : 'pnl-neg'}" style="font-size: 18px">${p.finalPnL >= 0 ? '+' : ''}${p.finalPnL.toFixed(2)}%</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderStats(active, history) {
+            const totalPnL = history.reduce((acc, p) => acc + (p.finalPnL || 0), 0);
+            const wins = history.filter(p => p.finalPnL > 0).length;
+            const rate = history.length > 0 ? (wins / history.length * 100).toFixed(0) : 0;
+
+            document.getElementById('statPnL').textContent = `${totalPnL >= 0 ? '+' : ''}${totalPnL.toFixed(2)}%`;
+            document.getElementById('statPnL').className = totalPnL >= 0 ? 'pnl-pos' : 'pnl-neg';
+            document.getElementById('statActive').textContent = active.length;
+            document.getElementById('statWin').textContent = `${rate}%`;
+        }
+
+        // Live Radar Simulation (or fetch real)
+        setInterval(() => {
+            const radar = document.getElementById('bloodRadar');
+            const syms = ['SOL', 'PEPE', 'WIF', 'BTC', 'ETH', 'BCH', 'XRP'];
+            const item = document.createElement('div');
+            item.className = 'blood-item';
+            item.innerHTML = `<span class="sym">${syms[Math.floor(Math.random()*syms.length)]}</span><span class="amt">$${(Math.random()*2).toFixed(1)}M</span>`;
+            radar.prepend(item);
+            if (radar.children.length > 20) radar.lastChild.remove();
+        }, 10000);
+
+        setInterval(fetchData, 2000);
+        setInterval(() => {
+            document.getElementById('timer').textContent = new Date().toLocaleTimeString();
+        }, 1000);
+    </script>
+</body>
+</html>
