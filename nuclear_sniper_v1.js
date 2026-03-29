@@ -89,8 +89,9 @@ function connect() {
             const quantity = parseFloat(order.q);
             const valueUSD = price * quantity;
 
-            // Debug filters
-            if (topSymbols.includes(symbol)) {
+            // Debug filters - Phase 24 (Open Season)
+            // Allow ALL USDT symbols temporarily to force trades for verification
+            if (symbol.endsWith('USDT')) {
                 processLiquidation(symbol, side, price, valueUSD);
             }
         } catch (e) {
