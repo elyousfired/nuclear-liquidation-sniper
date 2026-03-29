@@ -72,10 +72,11 @@ function connect() {
             const quantity = parseFloat(order.q);
             const valueUSD = price * quantity;
 
-            // Only monitor our Top 100
-            if (!topSymbols.includes(symbol)) return;
-
-            processLiquidation(symbol, side, price, valueUSD);
+            // DEBUG: See every liquidation for monitored symbols
+            if (topSymbols.includes(symbol)) {
+                // log(`[LOW-LEVEL] Liq: ${symbol} ${side} $${(valueUSD/1000).toFixed(1)}k`);
+                processLiquidation(symbol, side, price, valueUSD);
+            }
         } catch (e) {}
     });
 
@@ -95,8 +96,15 @@ function processLiquidation(symbol, side, price, value) {
     cluster.total += value;
     cluster.count++;
 
+    // DEBUG: Log accumulation
+    if (cluster.total > 10000) { // Log if >$10k accumulated
+        log(`[CLUSTER] ${symbol} accumulated $${(cluster.total/1000).toFixed(1)}k / $${(CONFIG.minClusterUSD/1000).toFixed(1)}k`);
+    }
+
     if (cluster.total >= CONFIG.minClusterUSD && activeSlots < CONFIG.maxSlots) {
         const pMove = Math.abs((price - cluster.startPrice) / cluster.startPrice) * 100;
+        log(`[PULSE-CHECK] ${symbol} moved ${pMove.toFixed(3)}% / ${CONFIG.minDipPct}%`);
+        
         if (pMove >= CONFIG.minDipPct) {
             const direction = cluster.side === 'SELL' ? 'LONG' : 'SHORT';
             executePulseEntry(symbol, direction, price, cluster.total);
