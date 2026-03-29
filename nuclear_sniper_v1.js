@@ -23,10 +23,10 @@ const CONFIG = {
     huntsFile: path.join(__dirname, 'server', 'data', 'active_pulses.json'),
     historyFile: path.join(__dirname, 'server', 'data', 'pulse_history.json'),
     
-    // THRESHOLDS
-    minClusterUSD: 1000000,   // $1M total liquidations in window
-    clusterWindowMs: 15000,   // 15 seconds accumulation
-    minDipPct: 0.6,           // Price must dip/spike by this %
+    // THRESHOLDS (AGGRESSIVE TEST MODE)
+    minClusterUSD: 100000,    // $100k (Fast triggers for testing)
+    clusterWindowMs: 15000,   
+    minDipPct: 0.3,           // 0.3% (Easy to hit)
     
     leverage: 1,              // 1x Leverage (Raw Safety)
     maxSlots: 10,             
